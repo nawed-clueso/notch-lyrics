@@ -1,0 +1,9 @@
+# SwiftPM build products
+.build/
+.swiftpm/
+
+# App bundle and DMG made by scripts/build-dmg.sh
+build/
+
+# macOS
+.DS_Store

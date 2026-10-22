@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Notch Lyrics Visualizer</title>
+<style>
+  :root { color-scheme: dark; }
+  html, body {
+    margin: 0; padding: 0;
+    width: 100%; height: 100%;
+    overflow: hidden;
+    background: transparent;
+  }
+  /* Inert by default — `?interactive=1` flips pointer-events on. A scene
+     layered under live SwiftUI controls must never swallow their clicks. */
+  canvas { display: block; width: 100%; height: 100%; pointer-events: none; }
+  body {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+  #fallback {
+    position: absolute; inset: 0;
+    display: none;
+    align-items: center; justify-content: center;
+    font: 500 11px -apple-system, system-ui, sans-serif;
+    color: rgba(255,255,255,0.35);
+    letter-spacing: 0.04em;
+  }
+  body.failed #fallback { display: flex; }
+</style>
+</head>
+<body>
+<div id="fallback">visualizer unavailable</div>
+<script type="module">
+  import { boot } from './visualizer.js';
+  boot().catch((err) => {
+    document.body.classList.add('failed');
+    window.webkit?.messageHandlers?.notch?.postMessage({
+      kind: 'error', message: String(err && err.stack || err)
+    });
+  });
+</script>
+</body>
+</html>
