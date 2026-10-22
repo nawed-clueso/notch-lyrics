@@ -63,6 +63,11 @@ This builds a release binary with Swift Package Manager and writes
 signed, so macOS treats each rebuild as a new app and asks for permissions
 again; sign it with a stable identity of your own to keep them.
 
+## Licence
+
+The app is released under the [MIT License](LICENSE). Bundled third-party
+files keep their own licences, listed below.
+
 ## Credits
 
 Fonts: [Work Sans](https://github.com/weiweihuanghuang/Work-Sans),
