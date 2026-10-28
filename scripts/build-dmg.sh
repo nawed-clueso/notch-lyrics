@@ -9,7 +9,7 @@ cd "$ROOT"
 
 APP_NAME="Notch Lyrics"
 BUNDLE_ID="com.notchlyrics.app"
-VERSION="1.1.0"
+VERSION="1.1.1"
 BUILD_DIR="$ROOT/build"
 APP_DIR="$BUILD_DIR/$APP_NAME.app"
 DMG_PATH="$BUILD_DIR/$APP_NAME.dmg"
@@ -18,6 +18,14 @@ EXEC_NAME="NotchLyrics"
 echo "▶︎ Cleaning build dir"
 rm -rf "$BUILD_DIR"
 mkdir -p "$BUILD_DIR"
+
+# Bundle.module only finds resources at the app root or at this Mac's .build
+# path, so a packaged app that uses it runs here and crashes on every other
+# Mac. Resources must go through Bundle.appResources.
+if grep -rnE '^[^/]*Bundle\.module' Sources; then
+    echo "✗ Bundle.module used above; use Bundle.appResources instead"
+    exit 1
+fi
 
 echo "▶︎ Compiling release binary"
 swift build -c release --arch arm64

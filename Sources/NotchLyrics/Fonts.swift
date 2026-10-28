@@ -43,7 +43,7 @@ enum AppFont {
         registered = true
 
         for (name, ext) in bundled {
-            guard let url = Bundle.module.url(forResource: name, withExtension: ext) else {
+            guard let url = Bundle.appResources.url(forResource: name, withExtension: ext) else {
                 NSLog("⚠️ Missing font resource: \(name).\(ext)")
                 continue
             }

@@ -6,6 +6,15 @@ All notable changes to this project are listed here. The format follows
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-10-28
+
+### Fixed
+
+- The app crashed on launch on every Mac except the one that built it: it
+  looked for its fonts and visualizer outside the app. It now loads them from
+  the app's Resources folder, and the release script refuses to package a
+  build that would look elsewhere.
+
 ## [1.1.0] - 2026-10-28
 
 ### Added
@@ -42,6 +51,7 @@ First release.
   reverb.
 - Same bar centred in the menu bar on displays without a notch.
 
-[Unreleased]: https://github.com/nawed-clueso/notch-lyrics/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/nawed-clueso/notch-lyrics/compare/v1.1.1...HEAD
+[1.1.1]: https://github.com/nawed-clueso/notch-lyrics/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/nawed-clueso/notch-lyrics/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/nawed-clueso/notch-lyrics/releases/tag/v1.0.0

@@ -24,7 +24,7 @@ private final class BundleSchemeHandler: NSObject, WKURLSchemeHandler {
         let id = ObjectIdentifier(task)
         live.insert(id)
 
-        guard let root = Bundle.module.url(forResource: "web", withExtension: nil) else {
+        guard let root = Bundle.appResources.url(forResource: "web", withExtension: nil) else {
             fail(task, id, "web resource directory missing from bundle")
             return
         }
