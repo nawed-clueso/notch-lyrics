@@ -1,0 +1,60 @@
+name: Bug report
+description: Something isn't working
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you saw, and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Play a song in ...
+        2. Hover over the notch
+        3. ...
+    validations:
+      required: true
+  - type: dropdown
+    id: player
+    attributes:
+      label: Player
+      options:
+        - Spotify
+        - Apple Music
+        - QuickTime
+        - Browser (Arc)
+        - Browser (Safari)
+        - Browser (Chrome)
+        - Browser (other, via media-control)
+        - Not player-specific
+    validations:
+      required: true
+  - type: input
+    id: song
+    attributes:
+      label: Song and artist
+      description: If the lyrics are wrong or missing, which track was it?
+  - type: input
+    id: version
+    attributes:
+      label: Notch Lyrics version
+      placeholder: "1.0.0"
+    validations:
+      required: true
+  - type: input
+    id: macos
+    attributes:
+      label: macOS version and Mac model
+      placeholder: "macOS 15.4, MacBook Pro 14-inch M3"
+    validations:
+      required: true
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else
+      description: Screenshots, recordings or logs help.

@@ -52,9 +52,9 @@ cat > "$APP_DIR/Contents/Info.plist" <<PLIST
     <key>CFBundleShortVersionString</key><string>$VERSION</string>
     <key>CFBundlePackageType</key>     <string>APPL</string>
     <key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
-    <key>LSMinimumSystemVersion</key>  <string>13.0</string>
+    <key>LSMinimumSystemVersion</key>  <string>15.0</string>
     <key>NSHighResolutionCapable</key> <true/>
-    <key>NSHumanReadableCopyright</key><string>Personal use</string>
+    <key>NSHumanReadableCopyright</key><string>© 2026 Nawed Ali. MIT License.</string>
     <key>NSAppleEventsUsageDescription</key>
     <string>Reads what's playing in Spotify, Apple Music, and YouTube Music to show synced lyrics.</string>
     <key>NSMicrophoneUsageDescription</key>

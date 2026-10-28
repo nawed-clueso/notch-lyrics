@@ -1,5 +1,8 @@
 # Notch Lyrics 🪩
 
+[![Build](https://github.com/nawed-clueso/notch-lyrics/actions/workflows/build.yml/badge.svg)](https://github.com/nawed-clueso/notch-lyrics/actions/workflows/build.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+
 Synced lyrics in your MacBook's notch. The notch grows a little on both sides
 to show the line being sung; rest the cursor on it and it opens into a lyrics
 card with the lines around it, a scrubber and playback controls.
@@ -63,6 +66,19 @@ This builds a release binary with Swift Package Manager and writes
 signed, so macOS treats each rebuild as a new app and asks for permissions
 again; sign it with a stable identity of your own to keep them.
 
+## Privacy
+
+Notch Lyrics has no analytics and no account. The only network requests are
+lyrics lookups to [LRCLIB](https://lrclib.net) (track title, artist, album and
+duration) and cover art. The optional audio effects process system audio live
+and never record or store it.
+
+## Contributing
+
+Bug reports and pull requests are welcome. See
+[CONTRIBUTING.md](CONTRIBUTING.md) for how to build and what to include, and
+[SECURITY.md](SECURITY.md) for reporting security problems privately.
+
 ## Licence
 
 The app is released under the [MIT License](LICENSE). Bundled third-party
@@ -75,3 +91,7 @@ Fonts: [Work Sans](https://github.com/weiweihuanghuang/Work-Sans),
 [Geist Mono](https://github.com/vercel/geist-font), under the SIL Open Font
 License. 3D visualizer: [three.js](https://threejs.org) (MIT). Licence texts
 are in [`LICENSES/`](LICENSES).
+
+Lyrics belong to their respective rights holders and are fetched from LRCLIB
+at runtime, never bundled. Notch Lyrics is not affiliated with or endorsed by
+Spotify, Apple or Google.
