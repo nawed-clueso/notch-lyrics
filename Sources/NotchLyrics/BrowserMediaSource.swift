@@ -76,6 +76,7 @@ struct BrowserMediaSource: PlaybackSource {
             var dur = media ? (media.duration || 0)    : 0;
             var paused = media ? media.paused : true;
             var kindHint = '';
+            var trackId = '';
 
             // Parse "M:SS" / "H:MM:SS" → seconds.
             function tsToSec(s) {
@@ -109,9 +110,20 @@ struct BrowserMediaSource: PlaybackSource {
                 var isEpisode = location.pathname.indexOf('/episode/') !== -1
                     || !!document.querySelector('[aria-label*="Skip back 15"], [aria-label*="Skip forward 15"]');
                 kindHint = isEpisode ? 'podcast' : 'music';
+
+                // The now-playing title links to the track, either as
+                // /track/<id> or /album/<id>?highlight=spotify:track:<id>.
+                var titleBox = document.querySelector('[data-testid="context-item-info-title"]');
+                var links = (titleBox || document).querySelectorAll(titleBox ? 'a[href]' : '[data-testid="context-item-link"]');
+                for (var li = 0; li < links.length && !trackId; li++) {
+                    var href = links[li].getAttribute('href') || '';
+                    try { href = decodeURIComponent(href); } catch (e) {}
+                    var tm = href.match(/(?:\/track\/|spotify:track:)([A-Za-z0-9]{22})/);
+                    if (tm) trackId = tm[1];
+                }
             }
 
-            return [title, artist, album, ct, dur, paused ? '0' : '1', art, location.hostname, kindHint].join('|||');
+            return [title, artist, album, ct, dur, paused ? '0' : '1', art, location.hostname, kindHint, trackId].join('|||');
         } catch (e) { return ''; }
     })()
     """#
@@ -159,6 +171,7 @@ struct BrowserMediaSource: PlaybackSource {
         let art = parts.count >= 7 ? parts[6] : ""
         let host = parts.count >= 8 ? parts[7] : ""
         let kindHint = parts.count >= 9 ? parts[8] : ""
+        let trackID = parts.count >= 10 ? parts[9] : ""
 
         // Kind: explicit hint from JS wins (Spotify Web tells us podcast vs music).
         // Otherwise host-based heuristic.
@@ -190,7 +203,8 @@ struct BrowserMediaSource: PlaybackSource {
             artworkData: nil,
             artworkURL: art.isEmpty ? nil : art,
             sourceName: "Browser (\(sourceLabel))",
-            kind: kind
+            kind: kind,
+            spotifyTrackID: host.contains("open.spotify.com") ? spotifyTrackID(from: trackID) : nil
         )
     }
 }

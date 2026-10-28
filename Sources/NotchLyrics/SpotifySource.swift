@@ -40,7 +40,8 @@ struct SpotifySource: PlaybackSource {
             artworkData: nil,
             artworkURL: artURL.isEmpty ? nil : artURL,
             sourceName: name,
-            kind: .music
+            kind: .music,
+            spotifyTrackID: spotifyTrackID(from: parts[5])
         )
     }
 }

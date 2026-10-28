@@ -111,6 +111,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         MainWindowController.shared.show(pane: .audio)
     }
 
+    @objc func showLyricsPane() {
+        MainWindowController.shared.show(pane: .lyrics)
+    }
+
     // MARK: - Standard app window behaviour
 
     /// Closing the window leaves the notch pill running, so don't terminate.

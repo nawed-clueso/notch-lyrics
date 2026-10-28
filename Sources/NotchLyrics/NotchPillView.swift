@@ -79,7 +79,7 @@ private struct PillContent: View {
             }
             .shadow(color: .black.opacity(open ? 0.35 : 0), radius: 12, x: 0, y: 4)
 
-            UnifiedContent(state: state, layout: layout, bar: bar)
+            UnifiedContent(state: state, layout: layout, bar: bar, shape: shape)
         }
     }
 }
@@ -300,6 +300,10 @@ private struct UnifiedContent: View {
     @ObservedObject var state: PlaybackState
     let layout: NotchLayout
     let bar: NotchWings.Bar
+    let shape: NotchShape
+    // Whether the card is in the view tree at all. It goes in and out with
+    // animations disabled; only its opacity (`showExtras`) is animated.
+    @State private var cardMounted = false
     // Drives whether the open card's content is mounted. We delay turning this
     // ON until the pill's open animation has had time to grow the frame, so
     // content doesn't pop in over a still-collapsing capsule. On close it flips
@@ -307,23 +311,39 @@ private struct UnifiedContent: View {
     @State private var showExtras = false
 
     var body: some View {
+        // Only opacity is animated here. Fading views in and out as they were
+        // inserted and removed left frozen, half-faded copies of old lyrics
+        // behind the card when a fade was cut short.
         ZStack(alignment: .top) {
-            if !state.isHovering {
-                CollapsedRow(state: state, layout: layout, bar: bar)
-                    .transition(.opacity)
-            }
-            if state.isHovering, showExtras {
-                ExpandedCard(state: state, layout: layout)
-                    .padding(.horizontal, CardMetrics.inset(layout))
-                    .padding(.bottom, layout.pt(12))
-                    .transition(.opacity)
+            CollapsedRow(state: state, layout: layout, bar: bar)
+                // Gone the moment the card starts opening, so the bar's lyric
+                // doesn't hang beside the notch while the card's comes in.
+                .opacity(state.isHovering ? 0 : 1)
+                .animation(state.isHovering ? nil : .easeOut(duration: 0.18), value: state.isHovering)
+                .allowsHitTesting(!state.isHovering)
+            if cardMounted {
+                // Laid out at the open size, so it never reflows as the frame
+                // grows or shrinks, and clipped to the card.
+                Color.clear.overlay(alignment: .top) {
+                    ExpandedCard(state: state, layout: layout)
+                        .padding(.horizontal, CardMetrics.inset(layout))
+                        .padding(.bottom, layout.pt(12))
+                        .frame(width: layout.expandedWidth,
+                               height: CardMetrics.height(state: state, layout: layout),
+                               alignment: .top)
+                }
+                .clipShape(shape)
+                .opacity(state.isHovering && showExtras ? 1 : 0)
+                .allowsHitTesting(state.isHovering && showExtras)
+                .transition(.identity)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .onChange(of: state.isHovering) { _, isOpen in
             if isOpen {
+                setCardMounted(true)
                 // Wait for the spring to mostly finish growing the frame before
-                // mounting inner content. 280ms is short of the spring's natural
+                // fading the content in. 280ms is short of the spring's natural
                 // settle so the fade-in overlaps the final easing of the open.
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.28) {
                     if state.isHovering {
@@ -332,8 +352,17 @@ private struct UnifiedContent: View {
                 }
             } else {
                 withAnimation(.easeOut(duration: 0.12)) { showExtras = false }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                    if !state.isHovering { setCardMounted(false) }
+                }
             }
         }
+    }
+
+    private func setCardMounted(_ mounted: Bool) {
+        var instant = Transaction()
+        instant.disablesAnimations = true
+        withTransaction(instant) { cardMounted = mounted }
     }
 }
 
@@ -348,8 +377,41 @@ private struct CollapsedRow: View {
     let bar: NotchWings.Bar
 
     var body: some View {
+        if NotchWings.isWhole(layout) {
+            wholeRow
+        } else {
+            splitRow
+        }
+    }
+
+    /// No notch: the line in one piece, centred, between equal end caps.
+    private var wholeRow: some View {
+        let cap = NotchWings.capWidth(layout)
+        return HStack(spacing: 0) {
+            HStack(spacing: 0) {
+                ArtworkView(state: state, size: NotchWings.artSize(layout))
+                Spacer(minLength: 0)
+            }
+            .padding(.leading, NotchWings.edgePad)
+            .frame(width: cap)
+
+            wingText(bar.left)
+                .frame(maxWidth: .infinity)
+
+            HStack(spacing: 0) {
+                Spacer(minLength: 0)
+                WingMeter(state: state, height: NotchWings.artSize(layout) * 0.7)
+            }
+            .padding(.trailing, NotchWings.edgePad)
+            .frame(width: cap)
+        }
+        .padding(.horizontal, NotchLayout.flare)
+        .frame(width: bar.totalWidth, height: layout.barHeight)
+    }
+
+    private var splitRow: some View {
         let gap = NotchWings.notchGap(layout)
-        HStack(spacing: 0) {
+        return HStack(spacing: 0) {
             HStack(spacing: 0) {
                 ArtworkView(state: state, size: NotchWings.artSize(layout))
                 Spacer(minLength: NotchWings.innerGap)
@@ -451,9 +513,9 @@ enum CardMetrics {
     static let footerHeight: CGFloat = 28
     static let bottomPadding: CGFloat = 12
 
-    /// Line box for text at `size`: Work Sans' ascent and descent plus a
-    /// little air.
-    static func rowHeight(_ size: CGFloat) -> CGFloat { ceil(size * 1.22) }
+    /// Line box for text at `size`: Geist's ascent and descent (1.3 of the
+    /// size), which already leaves air above the caps.
+    static func rowHeight(_ size: CGFloat) -> CGFloat { ceil(size * 1.3) }
 
     /// Full horizontal inset, including the shape's top-corner flare.
     static func inset(_ layout: NotchLayout) -> CGFloat {
@@ -485,7 +547,7 @@ enum CardMetrics {
     }
 
     static func lineFit(_ line: String, layout: NotchLayout, maxLines: Int) -> LyricLineFitter.Fit {
-        LyricLineFitter.fit(line, fontName: AppFont.bodyRegular,
+        LyricLineFitter.fit(line, fontName: AppFont.lyricLine, tracking: AppFont.lyricTracking,
                             maxSize: layout.pt(lineMaxSize), minSize: layout.pt(lineMinSize),
                             width: lyricWidth(layout), maxLines: maxLines)
     }
@@ -659,21 +721,16 @@ private struct LyricStack: View {
         let slotHeight = CardMetrics.currentSlot(state: state, layout: layout)
         return VStack(alignment: .leading, spacing: layout.pt(CardMetrics.rowGap)) {
             sideLine(state.previousLine, start: state.previousLineStart, opacity: 0.32)
-            // The outgoing and incoming lines overlap in one fixed slot during
-            // the transition instead of stacking and shoving the rows below.
-            ZStack(alignment: .leading) {
-                currentSlot
-                    .id(slot)
-                    .transition(.asymmetric(
-                        insertion: .opacity.combined(with: .offset(y: 6)),
-                        removal: .opacity.combined(with: .offset(y: -6))
-                    ))
-            }
-            .frame(height: slotHeight, alignment: .leading)
+            // One view whose text changes in place and slides in fresh on each
+            // new line. Swapping in a new view per line (and fading out the
+            // old one) could leave a stale line stuck under the current one.
+            currentSlot
+                .modifier(LineEntrance(trigger: slot))
+                .frame(height: slotHeight, alignment: .leading)
             sideLine(state.nextLine, start: state.nextLineStart, opacity: 0.5)
             sideLine(state.lineAfterNext, start: state.lineAfterNextStart, opacity: 0.26)
         }
-        .animation(Motion.reduced ? nil : .easeOut(duration: 0.25), value: slot)
+        .animation(Motion.reduced ? nil : .easeOut(duration: 0.25), value: slotHeight)
     }
 
     private struct SlotID: Hashable {
@@ -681,7 +738,7 @@ private struct LyricStack: View {
         let inBreak: Bool
     }
 
-    /// Colour of the sung fill and the break dots.
+    /// Colour of the current line and the break dots.
     private var ink: Color {
         ArtLooks.current.contains(.ink) ? ArtLooks.ink(state.palette) : .white
     }
@@ -695,7 +752,6 @@ private struct LyricStack: View {
         } else if let line = state.currentLine, !line.isEmpty {
             SungLine(
                 text: line,
-                fill: state.lineFill,
                 ink: ink,
                 maxSize: layout.pt(CardMetrics.lineMaxSize),
                 minSize: layout.pt(CardMetrics.lineMinSize),
@@ -719,6 +775,8 @@ private struct LyricStack: View {
             .foregroundStyle(Color.white.opacity(text == nil ? 0 : opacity))
             .lineLimit(1)
             .truncationMode(.tail)
+            // Swap, don't crossfade, so old and new text never overlap.
+            .contentTransition(.identity)
             .frame(height: CardMetrics.sideRow(layout), alignment: .leading)
             .seekable(to: text == nil ? nil : start, enabled: state.lyricsAreSynced, state: state)
     }
@@ -734,6 +792,29 @@ private struct LyricStack: View {
                 .foregroundStyle(Color.white.opacity(detail == nil ? 0 : 0.4))
                 .frame(height: CardMetrics.rowHeight(layout.pt(11)), alignment: .leading)
         }
+    }
+}
+
+/// Drops the content in from a few points below, fading up, whenever
+/// `trigger` changes. The view itself stays the same, so there is never an
+/// outgoing copy on screen.
+private struct LineEntrance<Trigger: Hashable>: ViewModifier {
+    let trigger: Trigger
+    @State private var shown = true
+
+    func body(content: Content) -> some View {
+        content
+            .opacity(shown ? 1 : 0)
+            .offset(y: shown ? 0 : 6)
+            .onChange(of: trigger) { _, _ in
+                guard !Motion.reduced else { return }
+                var reset = Transaction()
+                reset.disablesAnimations = true
+                withTransaction(reset) { shown = false }
+                DispatchQueue.main.async {
+                    withAnimation(.easeOut(duration: 0.25)) { shown = true }
+                }
+            }
     }
 }
 
@@ -766,14 +847,13 @@ private extension View {
     }
 }
 
-/// The current line, wrapped to at most two lines and filled left to right as
-/// it's sung. Line breaks are measured here rather than left to `Text`, so the
-/// fill can finish the first line before it starts the second.
+/// The current line, wrapped to at most two lines and shown solid. Lyrics are
+/// only timed per line, so it doesn't pretend to follow the words. Line breaks
+/// are measured here rather than left to `Text`, so the card can size the slot
+/// to the rows the line will actually take.
 private struct SungLine: View {
     let text: String
-    /// 0…1 of the line sung so far. 1 for unsynced lyrics, which show solid.
-    let fill: Double
-    /// Colour of the sung part.
+    /// Colour of the line.
     var ink: Color = .white
     let maxSize: CGFloat
     let minSize: CGFloat
@@ -781,48 +861,25 @@ private struct SungLine: View {
     /// Rows the line may wrap to; 1 while a scrub holds the slot at one row.
     var maxLines: Int = 2
 
-    /// Soft leading edge of the fill, so it reads as a sweep rather than a cut.
-    private let feather: CGFloat = 14
-
     var body: some View {
-        let fit = LyricLineFitter.fit(text, fontName: AppFont.bodyRegular,
+        let fit = LyricLineFitter.fit(text, fontName: AppFont.lyricLine, tracking: AppFont.lyricTracking,
                                       maxSize: maxSize, minSize: minSize,
                                       width: width, maxLines: maxLines)
-        // The fill travels each line's width plus the feather, so a line ends
-        // fully white rather than with its last letters still fading.
-        let spans = fit.lines.map { $0.width + feather }
-        let travelled = CGFloat(fill) * spans.reduce(0, +)
         VStack(alignment: .leading, spacing: 0) {
-            ForEach(Array(fit.lines.enumerated()), id: \.offset) { i, line in
-                let before = spans.prefix(i).reduce(0, +)
-                let lit = min(max(travelled - before, 0), spans[i])
-                lineView(line, size: fit.size, lit: lit)
+            ForEach(Array(fit.lines.enumerated()), id: \.offset) { _, line in
+                styled(line, size: fit.size).foregroundStyle(ink)
             }
         }
-        .animation(.linear(duration: 0.25), value: fill)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(text)
     }
 
-    private func lineView(_ line: LyricLineFitter.Line, size: CGFloat, lit: CGFloat) -> some View {
-        ZStack(alignment: .leading) {
-            styled(line, size: size).foregroundStyle(Color.white.opacity(0.4))
-            styled(line, size: size).foregroundStyle(ink)
-                .mask(alignment: .leading) {
-                    HStack(spacing: 0) {
-                        Rectangle().frame(width: max(lit - feather, 0))
-                        LinearGradient(colors: [.white, .white.opacity(0)],
-                                       startPoint: .leading, endPoint: .trailing)
-                            .frame(width: feather)
-                    }
-                    .offset(x: min(lit - feather, 0))
-                }
-        }
-    }
-
     @ViewBuilder
     private func styled(_ line: LyricLineFitter.Line, size: CGFloat) -> some View {
-        let base = Text(line.text).font(.custom(AppFont.bodyRegular, size: size)).lineLimit(1)
+        let base = Text(line.text)
+            .font(.custom(AppFont.lyricLine, size: size))
+            .tracking(size * AppFont.lyricTracking)
+            .lineLimit(1)
         if line.truncated {
             base.truncationMode(.tail).frame(maxWidth: width, alignment: .leading)
         } else {

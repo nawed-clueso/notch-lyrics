@@ -17,13 +17,26 @@ struct LyricsBundle: Equatable {
 actor LyricsFetcher {
     private var cache: [String: LyricsBundle] = [:]
 
-    func lyrics(track: String, artist: String, album: String, duration: Double) async -> LyricsBundle? {
-        let key = "\(track)|\(artist)|\(Int(duration))"
+    /// With a Spotify track id and Spotify lyrics turned on, Spotify's own
+    /// lines come first: they are timed to that exact recording. LRCLIB covers
+    /// everything else, and any Spotify failure.
+    func lyrics(track: String, artist: String, album: String, duration: Double,
+                spotifyTrackID: String? = nil) async -> LyricsBundle? {
+        let useSpotify = spotifyTrackID != nil && SpotifyLyricsSettings.isEnabled
+        let key = "\(track)|\(artist)|\(Int(duration))|\(useSpotify)"
         if let cached = cache[key] { return cached }
-        let result = await fetchFromLRCLib(track: track, artist: artist, album: album, duration: duration)
+        var result: LyricsBundle?
+        if useSpotify, let spotifyTrackID {
+            result = await SpotifyLyricsClient.shared.lyrics(trackID: spotifyTrackID)
+        }
+        if result?.lines.isEmpty ?? true {
+            result = await fetchFromLRCLib(track: track, artist: artist, album: album, duration: duration)
+        }
         if let result { cache[key] = result }
         return result
     }
+
+    func clearCache() { cache.removeAll() }
 
     // MARK: - LRCLib
 

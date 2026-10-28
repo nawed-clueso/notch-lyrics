@@ -37,9 +37,28 @@ enum NotchWings {
         min(20, layout.barHeight - 8)
     }
 
+    /// With no camera to split around, the line is shown whole and centred,
+    /// with the artwork and meter in equal end caps either side.
+    static func isWhole(_ layout: NotchLayout) -> Bool { layout.notchWidth == 0 }
+
+    /// Width of each end cap on a bar that shows the line whole.
+    static func capWidth(_ layout: NotchLayout) -> CGFloat {
+        max(edgePad + artSize(layout) + innerGap, innerGap + meterWidth + edgePad)
+    }
+
     static func bar(for text: String, layout: NotchLayout) -> Bar {
         let key = "\(layout.notchWidth)|\(layout.barHeight)|\(layout.maxWing)|\(text)"
         if let hit = cache[key] { return hit }
+
+        if isWhole(layout) {
+            let need = capWidth(layout) + (text.isEmpty ? 0 : (width(of: text) + 2) / 2)
+            let wing = min(need.rounded(.up), layout.maxWing)
+            let bar = Bar(left: text, right: "", wing: wing,
+                          totalWidth: wing * 2 + NotchLayout.flare * 2)
+            if cache.count > 64 { cache.removeAll() }
+            cache[key] = bar
+            return bar
+        }
 
         let (left, right) = split(text)
         let gap = notchGap(layout)
@@ -92,6 +111,9 @@ enum NotchWings {
 
     /// True when the balanced split of `text` fits both wings at their cap.
     private static func fits(_ text: String, layout: NotchLayout) -> Bool {
+        if isWhole(layout) {
+            return width(of: text) + 2 <= (layout.maxWing - capWidth(layout)) * 2
+        }
         let (left, right) = split(text)
         let gap = notchGap(layout)
         let leftRoom = layout.maxWing - edgePad - artSize(layout) - innerGap - gap
@@ -124,7 +146,7 @@ enum NotchWings {
     }
 
     private static func width(of s: String) -> CGFloat {
-        let font = NSFont(name: AppFont.bodyRegular, size: fontSize)
+        let font = NSFont(name: AppFont.pillMedium, size: fontSize)
             ?? NSFont.systemFont(ofSize: fontSize)
         return ceil((s as NSString).size(withAttributes: [.font: font]).width)
     }

@@ -49,6 +49,21 @@ final class PlaybackState: ObservableObject {
                 self?.lyricChunkTick &+= 1
             }
         }
+        // Turning Spotify lyrics on or off, or changing the cookie, re-fetches
+        // the song that's playing rather than waiting for the next one.
+        NotificationCenter.default.addObserver(
+            forName: SpotifyLyricsSettings.didChange, object: nil, queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in self?.refetchForSpotifySettings() }
+        }
+    }
+
+    private func refetchForSpotifySettings() {
+        guard let info = nowPlaying, info.kind == .music, info.spotifyTrackID != nil else { return }
+        Task {
+            await fetcher.clearCache()
+            fetchLyrics(for: info)
+        }
     }
 
     private var artworkTask: Task<Void, Never>?
@@ -123,9 +138,13 @@ final class PlaybackState: ObservableObject {
     private var clampedPosition: Double = 0
     private var clampedTrackID: String?
 
+    /// How far ahead of the playhead the lyrics run, so each line is up just
+    /// before it's sung rather than just after.
+    private static let lyricLead: Double = 0.5
+
     /// Where the lyrics are drawn from: the scrub preview while one is in
-    /// progress, the playhead otherwise.
-    private var displayPosition: Double { scrubPosition ?? clampedPosition }
+    /// progress, the playhead (plus the lead) otherwise.
+    private var displayPosition: Double { scrubPosition ?? clampedPosition + Self.lyricLead }
 
     private func updateClampedPosition() {
         guard let info = nowPlaying else {
@@ -177,7 +196,8 @@ final class PlaybackState: ObservableObject {
     private func fetchLyrics(for info: NowPlayingInfo) {
         Task { @MainActor in
             let bundle = await fetcher.lyrics(
-                track: info.title, artist: info.artist, album: info.album, duration: info.duration
+                track: info.title, artist: info.artist, album: info.album, duration: info.duration,
+                spotifyTrackID: info.spotifyTrackID
             )
             if info.id == nowPlaying?.id {
                 // An LRC that parses to zero lines is as good as no lyrics.
@@ -270,10 +290,10 @@ final class PlaybackState: ObservableObject {
         Double(text.count) * 0.12 + 1.5
     }
 
-    /// How much of the current line has been sung, 0…1, for the fill that
-    /// sweeps across it. LRC only times whole lines, so the fill is spread
-    /// over the line's slot, capped at its estimated sung length so it
-    /// doesn't crawl through a silence after the words end.
+    /// Roughly how much of the current line has been sung, 0…1. Lyrics only
+    /// time whole lines, so this is spread over the line's slot, capped at its
+    /// estimated sung length. Used to page a long line through the closed bar,
+    /// never to highlight words.
     var lineFill: Double {
         guard lyricsAreSynced, let idx = currentLineIndex, let lyrics,
               !lyrics.lines[idx].text.isEmpty,

@@ -5,20 +5,33 @@ import CoreText
 /// Bundled typefaces, registered with CoreText at launch so
 /// `Font.custom(_:size:)` can find them by PostScript name.
 ///
-/// Three roles, each a real family rather than a weight of the same one:
 /// Instrument Serif for titles (formal, high contrast, holds up large),
-/// Work Sans for everything read as UI or prose (humanist, still legible at
-/// 11pt), Geist Mono for values and commands.
+/// Work Sans for the app window's UI and prose (humanist, still legible at
+/// 11pt), Geist for everything in the notch pill, and Geist Mono for values
+/// and commands. The pill and its timestamps share one family, so the notch
+/// reads as a single system.
 enum AppFont {
     static let titleSerif = "InstrumentSerif-Regular"
     static let bodyRegular = "WorkSans-Regular"
     static let bodySemibold = "WorkSans-SemiBold"
+    static let pillRegular = "Geist-Regular"
+    static let pillMedium = "Geist-Medium"
+    static let pillSemibold = "Geist-SemiBold"
     static let monoRegular = "GeistMono-Regular"
+
+    /// The line being sung. Semibold and tracked in a little, so it reads as
+    /// a lyric rather than body copy and stands apart from its neighbours.
+    static let lyricLine = pillSemibold
+    /// Letter spacing for `lyricLine`, as a fraction of the point size.
+    static let lyricTracking: CGFloat = -0.025
 
     private static let bundled = [
         ("InstrumentSerif-Regular", "ttf"),
         ("WorkSans-Regular", "ttf"),
         ("WorkSans-SemiBold", "ttf"),
+        ("Geist-Regular", "otf"),
+        ("Geist-Medium", "otf"),
+        ("Geist-SemiBold", "otf"),
         ("GeistMono-Regular", "otf"),
         ("GeistMono-Medium", "otf"),
         ("GeistMono-SemiBold", "otf"),
@@ -45,7 +58,7 @@ enum AppFont {
         // Registration is silent on failure at the call site, so verify once:
         // a missing family falls back to the system font and the whole app
         // quietly looks wrong.
-        for name in [titleSerif, bodyRegular, bodySemibold, monoRegular] where NSFont(name: name, size: 12) == nil {
+        for name in [titleSerif, bodyRegular, bodySemibold, pillRegular, pillMedium, pillSemibold, monoRegular] where NSFont(name: name, size: 12) == nil {
             NSLog("⚠️ Font unavailable after registration: \(name)")
         }
     }
@@ -54,10 +67,10 @@ enum AppFont {
     // MARK: - Size helpers
     //
     // The notch pill sizes type against its own geometry rather than the app's
-    // type scale, so it asks for a family at an explicit size. Work Sans reads
-    // well small and light-on-dark, which is all the pill ever does.
+    // type scale, so it asks for a family at an explicit size. Geist stays
+    // crisp small and light-on-dark, which is all the pill ever does.
 
-    static func regular(_ size: CGFloat) -> Font  { .custom(bodyRegular, size: size) }
-    static func medium(_ size: CGFloat) -> Font   { .custom(bodyRegular, size: size) }
-    static func semiBold(_ size: CGFloat) -> Font { .custom(bodySemibold, size: size) }
+    static func regular(_ size: CGFloat) -> Font  { .custom(pillRegular, size: size) }
+    static func medium(_ size: CGFloat) -> Font   { .custom(pillMedium, size: size) }
+    static func semiBold(_ size: CGFloat) -> Font { .custom(pillSemibold, size: size) }
 }

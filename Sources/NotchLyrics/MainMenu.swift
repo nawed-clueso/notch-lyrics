@@ -92,6 +92,10 @@ enum MainMenuBuilder {
                                  action: #selector(AppDelegate.showAudioPane),
                                  keyEquivalent: "2")
         audio.target = target
+        let lyrics = menu.addItem(withTitle: "Lyrics",
+                                  action: #selector(AppDelegate.showLyricsPane),
+                                  keyEquivalent: "3")
+        lyrics.target = target
 
         menu.addItem(.separator())
         let full = menu.addItem(withTitle: "Enter Full Screen",

@@ -4,7 +4,7 @@ import SwiftUI
 // MARK: - Panes
 
 enum AppPane: String, CaseIterable, Identifiable {
-    case setup, audio
+    case setup, audio, lyrics
 
     var id: String { rawValue }
 
@@ -12,6 +12,7 @@ enum AppPane: String, CaseIterable, Identifiable {
         switch self {
         case .setup: "Setup"
         case .audio: "Audio"
+        case .lyrics: "Lyrics"
         }
     }
 
@@ -19,6 +20,7 @@ enum AppPane: String, CaseIterable, Identifiable {
         switch self {
         case .setup: "checklist"
         case .audio: "slider.horizontal.3"
+        case .lyrics: "quote.bubble"
         }
     }
 
@@ -26,6 +28,7 @@ enum AppPane: String, CaseIterable, Identifiable {
         switch self {
         case .setup: "Permissions and routing"
         case .audio: "Presets, EQ, effects"
+        case .lyrics: "Where lyrics come from"
         }
     }
 }
@@ -149,6 +152,8 @@ struct MainView: View {
             }
         case .audio:
             AudioEffectsPane()
+        case .lyrics:
+            LyricsPane()
         }
     }
 }

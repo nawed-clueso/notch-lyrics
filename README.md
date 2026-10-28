@@ -9,15 +9,16 @@ card with the lines around it, a scrubber and playback controls.
 
 Works with Spotify, Apple Music, QuickTime, and music playing in a browser
 (YouTube Music, Spotify Web and others). Lyrics come from
-[LRCLIB](https://lrclib.net).
+[LRCLIB](https://lrclib.net), or optionally from Spotify itself for songs
+playing in Spotify.
 
 ## Features
 
 - **The line being sung, in the notch.** The closed bar is the notch widened
   evenly on both sides, with the line split across the camera. Long lines show
   in parts as they're sung.
-- **Lyrics card on hover.** The current line fills in as it's sung, with the
-  lines before and after it. Instrumental breaks show three dots that count in
+- **Lyrics card on hover.** The current line, with the lines before and after
+  it. Instrumental breaks show three dots that count in
   to the next line.
 - **Scrub and skim.** Drag the scrubber and the lyrics follow; click any line
   to jump to it; two-finger scroll over the card to step line by line.
@@ -55,6 +56,21 @@ Works with Spotify, Apple Music, QuickTime, and music playing in a browser
   brew install media-control
   ```
 
+### Spotify lyrics (optional)
+
+For songs playing in the Spotify app or on open.spotify.com, Notch Lyrics can
+use Spotify's own lyrics, timed to the exact recording. It signs in the way the
+Spotify web player does, so it needs your `sp_dc` cookie:
+
+1. In a browser signed in to [open.spotify.com](https://open.spotify.com), open
+   Developer Tools, go to **Application** (**Storage** in Safari) › **Cookies** ›
+   `open.spotify.com`, and copy the value of `sp_dc`.
+2. In Notch Lyrics, open **View › Lyrics** (⌘3), paste it and click **Save**.
+
+The cookie signs in as you: it's kept in your Keychain and only sent to
+Spotify. This isn't a public API, so it can stop working when Spotify changes
+the web player; songs then fall back to LRCLIB.
+
 ## Build from source
 
 ```bash
@@ -70,7 +86,8 @@ again; sign it with a stable identity of your own to keep them.
 
 Notch Lyrics has no analytics and no account. The only network requests are
 lyrics lookups to [LRCLIB](https://lrclib.net) (track title, artist, album and
-duration) and cover art. The optional audio effects process system audio live
+duration) and cover art. With Spotify lyrics turned on, it also signs in to
+Spotify with your cookie and asks for lyrics by track id. The optional audio effects process system audio live
 and never record or store it.
 
 ## Contributing
@@ -88,7 +105,7 @@ files keep their own licences, listed below.
 
 Fonts: [Work Sans](https://github.com/weiweihuanghuang/Work-Sans),
 [Instrument Serif](https://github.com/Instrument/instrument-serif) and
-[Geist Mono](https://github.com/vercel/geist-font), under the SIL Open Font
+[Geist and Geist Mono](https://github.com/vercel/geist-font), under the SIL Open Font
 License. 3D visualizer: [three.js](https://threejs.org) (MIT). Licence texts
 are in [`LICENSES/`](LICENSES).
 

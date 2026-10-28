@@ -22,6 +22,9 @@ struct NowPlayingInfo: Equatable {
     let artworkURL: String?
     let sourceName: String
     let kind: MediaKind
+    /// Spotify's own id for the track, when the source knows it. Lets the
+    /// lyrics come from Spotify for exactly this recording.
+    var spotifyTrackID: String? = nil
 
     var currentPosition: Double {
         guard isPlaying else { return elapsedAtCapture }
@@ -35,7 +38,8 @@ struct NowPlayingInfo: Equatable {
                        duration: duration, elapsedAtCapture: position,
                        captureTimestamp: Date(), isPlaying: isPlaying,
                        artworkData: artworkData, artworkURL: artworkURL,
-                       sourceName: sourceName, kind: kind)
+                       sourceName: sourceName, kind: kind,
+                       spotifyTrackID: spotifyTrackID)
     }
 }
 

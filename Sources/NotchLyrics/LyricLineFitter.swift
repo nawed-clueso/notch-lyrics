@@ -23,17 +23,19 @@ enum LyricLineFitter {
         let lines: [Line]
     }
 
-    static func fit(_ text: String, fontName: String,
+    /// `tracking` is letter spacing as a fraction of the point size, matching
+    /// what the row is drawn with.
+    static func fit(_ text: String, fontName: String, tracking: CGFloat = 0,
                     maxSize: CGFloat, minSize: CGFloat,
                     width: CGFloat, maxLines: Int) -> Fit {
-        let key = "\(fontName)|\(maxSize)|\(minSize)|\(width)|\(maxLines)|\(text)"
+        let key = "\(fontName)|\(tracking)|\(maxSize)|\(minSize)|\(width)|\(maxLines)|\(text)"
         if let hit = cache[key] { return hit }
 
         var size = maxSize
-        var lines = breakLines(text, fontName: fontName, size: size, width: width)
+        var lines = breakLines(text, fontName: fontName, tracking: tracking, size: size, width: width)
         while lines.count > maxLines, size - 1 >= minSize {
             size -= 1
-            lines = breakLines(text, fontName: fontName, size: size, width: width)
+            lines = breakLines(text, fontName: fontName, tracking: tracking, size: size, width: width)
         }
         if lines.count > maxLines {
             let head = Array(lines.prefix(maxLines - 1))
@@ -49,10 +51,10 @@ enum LyricLineFitter {
 
     private static var cache: [String: Fit] = [:]
 
-    private static func breakLines(_ text: String, fontName: String,
+    private static func breakLines(_ text: String, fontName: String, tracking: CGFloat,
                                    size: CGFloat, width: CGFloat) -> [Line] {
         let font = NSFont(name: fontName, size: size) ?? .systemFont(ofSize: size)
-        let attrs: [NSAttributedString.Key: Any] = [.font: font]
+        let attrs: [NSAttributedString.Key: Any] = [.font: font, .kern: size * tracking]
         let storage = NSTextStorage(string: text, attributes: attrs)
         let manager = NSLayoutManager()
         let container = NSTextContainer(size: CGSize(width: width, height: .greatestFiniteMagnitude))
