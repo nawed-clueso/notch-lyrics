@@ -1,6 +1,5 @@
 import CryptoKit
 import Foundation
-import Security
 import os.log
 
 private let spotifyLogger = Logger(subsystem: "com.notchlyrics.app", category: "spotify-lyrics")
@@ -18,8 +17,6 @@ enum SpotifyLyricsSettings {
     static let didChange = Notification.Name("SpotifyLyricsSettingsDidChange")
 
     private static let enabledKey = "spotifyLyricsEnabled"
-    private static let keychainService = "com.notchlyrics.app.spotify"
-    private static let keychainAccount = "sp_dc"
 
     static var isEnabled: Bool {
         get { UserDefaults.standard.bool(forKey: enabledKey) }
@@ -29,50 +26,41 @@ enum SpotifyLyricsSettings {
         }
     }
 
-    /// The `sp_dc` cookie. It signs in as the user, so it lives in the
-    /// Keychain, never in defaults.
+    /// The `sp_dc` cookie, in a file only this user can read.
+    ///
+    /// Not the Keychain: the app isn't signed with a Developer ID, so a
+    /// Keychain item is tied to one exact build, and every update would ask
+    /// for the login password before the cookie could be read again.
     static var cookie: String? {
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: keychainService,
-            kSecAttrAccount as String: keychainAccount,
-            kSecReturnData as String: true,
-            kSecMatchLimit as String: kSecMatchLimitOne,
-        ]
-        var item: CFTypeRef?
-        guard SecItemCopyMatching(query as CFDictionary, &item) == errSecSuccess,
-              let data = item as? Data,
-              let value = String(data: data, encoding: .utf8),
+        guard let data = FileManager.default.contents(atPath: cookieURL.path),
+              let value = String(data: data, encoding: .utf8)?
+                .trimmingCharacters(in: .whitespacesAndNewlines),
               !value.isEmpty
         else { return nil }
         return value
     }
 
     static func saveCookie(_ value: String) {
-        SecItemDelete([
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: keychainService,
-            kSecAttrAccount as String: keychainAccount,
-        ] as CFDictionary)
-        let attrs: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: keychainService,
-            kSecAttrAccount as String: keychainAccount,
-            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly,
-            kSecValueData as String: Data(value.utf8),
-        ]
-        SecItemAdd(attrs as CFDictionary, nil)
+        let fm = FileManager.default
+        try? fm.createDirectory(at: cookieURL.deletingLastPathComponent(),
+                                withIntermediateDirectories: true,
+                                attributes: [.posixPermissions: 0o700])
+        fm.createFile(atPath: cookieURL.path, contents: Data(value.utf8),
+                      attributes: [.posixPermissions: 0o600])
+        // createFile only applies attributes to a new file.
+        try? fm.setAttributes([.posixPermissions: 0o600], ofItemAtPath: cookieURL.path)
         NotificationCenter.default.post(name: didChange, object: nil)
     }
 
     static func clearCookie() {
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: keychainService,
-            kSecAttrAccount as String: keychainAccount,
-        ]
-        SecItemDelete(query as CFDictionary)
+        try? FileManager.default.removeItem(at: cookieURL)
         NotificationCenter.default.post(name: didChange, object: nil)
+    }
+
+    private static var cookieURL: URL {
+        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("Notch Lyrics", isDirectory: true)
+            .appendingPathComponent("spotify-sp_dc")
     }
 
     /// Accepts the bare value or a pasted `sp_dc=…; …` cookie string.

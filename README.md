@@ -67,8 +67,8 @@ Spotify web player does, so it needs your `sp_dc` cookie:
    `open.spotify.com`, and copy the value of `sp_dc`.
 2. In Notch Lyrics, open **View › Lyrics** (⌘3), paste it and click **Save**.
 
-The cookie signs in as you: it's kept in your Keychain and only sent to
-Spotify. This isn't a public API, so it can stop working when Spotify changes
+The cookie signs in as you: it's stored on this Mac where only your account
+can read it, and only sent to Spotify. This isn't a public API, so it can stop working when Spotify changes
 the web player; songs then fall back to LRCLIB.
 
 ## Build from source

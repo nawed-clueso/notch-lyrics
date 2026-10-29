@@ -119,19 +119,26 @@ struct NotchShape: Shape {
 // MARK: - Glass
 
 /// The open card's backdrop: frosted glass over whatever is behind the card,
-/// with a faint wash of the cover's colour so it still belongs to the song.
-/// Idle and video (no artwork) get the glass alone.
+/// with a faint wash of the cover's colour so it still belongs to the song,
+/// then dimmed so busy windows behind it don't compete with the lyrics.
+/// Idle and video (no artwork) get the dimmed glass alone.
 private struct CardGlass: View {
     @ObservedObject var state: PlaybackState
+
+    /// How much the dark layer over the glass hides what's behind the card.
+    private static let dim = 0.35
 
     var body: some View {
         let look = ArtLooks.current
         ZStack {
             BehindWindowBlur()
-            if state.isMusic, let art = state.artwork {
+            if state.isMusic, state.artwork != nil {
                 state.backgroundColor
                     .opacity(0.22)
                     .transition(.opacity)
+            }
+            Color.black.opacity(Self.dim)
+            if state.isMusic, let art = state.artwork {
                 if look.contains(.glow) { GlowArt(image: art) }
                 if look.contains(.vinyl) {
                     VinylArt(image: art, playing: state.nowPlaying?.isPlaying ?? false)
@@ -395,7 +402,7 @@ private struct CollapsedRow: View {
             .padding(.leading, NotchWings.edgePad)
             .frame(width: cap)
 
-            wingText(bar.left)
+            wingText(bar.left, alignment: .center)
                 .frame(maxWidth: .infinity)
 
             HStack(spacing: 0) {
@@ -415,7 +422,7 @@ private struct CollapsedRow: View {
             HStack(spacing: 0) {
                 ArtworkView(state: state, size: NotchWings.artSize(layout))
                 Spacer(minLength: NotchWings.innerGap)
-                wingText(bar.left)
+                wingText(bar.left, alignment: .trailing)
             }
             .padding(.leading, NotchWings.edgePad)
             .padding(.trailing, gap)
@@ -424,7 +431,7 @@ private struct CollapsedRow: View {
             Color.clear.frame(width: layout.notchWidth)
 
             HStack(spacing: 0) {
-                wingText(bar.right)
+                wingText(bar.right, alignment: .leading)
                 Spacer(minLength: NotchWings.innerGap)
                 WingMeter(state: state, height: NotchWings.artSize(layout) * 0.7)
             }
@@ -436,14 +443,56 @@ private struct CollapsedRow: View {
         .frame(height: layout.barHeight)
     }
 
-    private func wingText(_ text: String) -> some View {
-        Text(text)
-            .font(AppFont.medium(layout.cpt(NotchWings.fontSize)))
-            .foregroundStyle(Color.white.opacity(state.nowPlaying == nil ? 0.65 : 1.0))
-            .lineLimit(1)
-            .truncationMode(.tail)
-            .contentTransition(.opacity)
-            .animation(.easeInOut(duration: 0.2), value: text)
+    /// One wing's text. A new line rolls in: the old one lifts up and out
+    /// while the new one rises from below, clipped to the bar.
+    private func wingText(_ text: String, alignment: Alignment) -> some View {
+        let travel = layout.barHeight * 0.5
+        return ZStack(alignment: alignment) {
+            Text(text)
+                .font(AppFont.medium(layout.cpt(NotchWings.fontSize)))
+                .foregroundStyle(Color.white.opacity(state.nowPlaying == nil ? 0.65 : 1.0))
+                .lineLimit(1)
+                .truncationMode(.tail)
+                .id(text)
+                .transition(Motion.reduced
+                    ? AnyTransition.opacity
+                    : AnyTransition.asymmetric(insertion: AnyTransition(LineRollIn(travel: travel)),
+                                               removal: AnyTransition(LineRollOut(travel: travel))))
+        }
+        .frame(height: layout.barHeight)
+        // Clip top and bottom only: the wing's width changes between lines,
+        // and a full clip would cut the outgoing text off at the sides.
+        .mask { Rectangle().padding(.horizontal, -layout.expandedWidth) }
+        .animation(Motion.reduced ? .easeInOut(duration: 0.2) : .spring(response: 0.45, dampingFraction: 0.9),
+                   value: text)
+    }
+}
+
+/// The incoming line: rises from below on the roll's spring, and fades in a
+/// beat behind it so it brightens as it settles rather than while it's low.
+private struct LineRollIn: Transition {
+    let travel: CGFloat
+
+    func body(content: Content, phase: TransitionPhase) -> some View {
+        content
+            .offset(y: phase.isIdentity ? 0 : travel)
+            .animation(.easeOut(duration: 0.26).delay(0.06)) {
+                $0.opacity(phase.isIdentity ? 1 : 0)
+            }
+    }
+}
+
+/// The outgoing line: lifts up on the roll's spring, and fades quickly so it's
+/// gone before the new line arrives under it.
+private struct LineRollOut: Transition {
+    let travel: CGFloat
+
+    func body(content: Content, phase: TransitionPhase) -> some View {
+        content
+            .offset(y: phase.isIdentity ? 0 : -travel)
+            .animation(.easeIn(duration: 0.16)) {
+                $0.opacity(phase.isIdentity ? 1 : 0)
+            }
     }
 }
 
@@ -707,7 +756,7 @@ private struct LyricStack: View {
         case .found:
             lines
         case .notFound:
-            message("No lyrics for this one", detail: "LRCLIB doesn't have this track.")
+            message("No lyrics for this one", detail: "Couldn't find synced lyrics for this track.")
         case .loading, .none:
             message("Looking up lyrics…", detail: nil)
         }

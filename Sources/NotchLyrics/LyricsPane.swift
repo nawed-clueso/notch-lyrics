@@ -30,7 +30,7 @@ struct LyricsPane: View {
         VStack(alignment: .leading, spacing: Space.xs) {
             Text("Lyrics")
                 .font(Typo.title(28))
-            Text("Synced lyrics come from LRCLIB. Songs playing in Spotify can use Spotify's own lyrics instead.")
+            Text("Lyrics are found automatically for whatever's playing. Songs playing in Spotify can use Spotify's own lyrics instead.")
                 .font(Typo.copy)
                 .foregroundStyle(SP.textSecondary)
         }
@@ -41,7 +41,7 @@ struct LyricsPane: View {
             HStack(alignment: .top, spacing: Space.lg) {
                 VStack(alignment: .leading, spacing: Space.xs) {
                     Text("Spotify Lyrics").font(Typo.heading)
-                    Text("For songs playing in the Spotify app or open.spotify.com. Lines are timed to the exact recording. If Spotify has none, LRCLIB is used.")
+                    Text("For songs playing in the Spotify app or open.spotify.com. Lines are timed to the exact recording. If Spotify has none, the usual lyrics are used.")
                         .font(Typo.caption)
                         .foregroundStyle(SP.textTertiary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -74,7 +74,7 @@ struct LyricsPane: View {
             }
 
             InfoNote(icon: "exclamationmark.triangle", tint: SP.warning,
-                     text: "This signs in the way Spotify's web player does. It isn't a public API, so it can stop working when Spotify changes the web player. Songs then fall back to LRCLIB.")
+                     text: "This signs in the way Spotify's web player does. It isn't a public API, so it can stop working when Spotify changes the web player. Songs then fall back to the usual lyrics.")
         }
         .card(fill: SP.surface)
     }
@@ -95,7 +95,7 @@ struct LyricsPane: View {
                     .disabled(SpotifyLyricsSettings.normalise(draft).isEmpty)
             }
             InfoNote(icon: "info.circle",
-                     text: "In a browser signed in to open.spotify.com, open Developer Tools, go to Application (Storage in Safari) › Cookies › open.spotify.com, and copy the value of sp_dc. It signs in as you, so it's kept in your Keychain and only sent to Spotify.")
+                     text: "In a browser signed in to open.spotify.com, open Developer Tools, go to Application (Storage in Safari) › Cookies › open.spotify.com, and copy the value of sp_dc. It signs in as you, so it's stored on this Mac where only your account can read it, and only sent to Spotify.")
         }
     }
 

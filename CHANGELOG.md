@@ -6,6 +6,20 @@ All notable changes to this project are listed here. The format follows
 
 ## [Unreleased]
 
+## [1.1.2] - 2026-10-29
+
+### Changed
+
+- The closed bar rolls to each new line: the old one lifts up and fades out
+  while the next rises in and brightens.
+- The open card is darker, so busy windows behind it don't compete with the
+  lyrics.
+- The Spotify cookie is stored in a file only your account can read instead
+  of the Keychain. The Keychain asked for your login password every time the
+  app was updated. If you saved a cookie in 1.1.0 or 1.1.1, paste it again in
+  View › Lyrics.
+- Lyrics copy in the app no longer names the lyrics service.
+
 ## [1.1.1] - 2026-10-28
 
 ### Fixed
@@ -51,7 +65,8 @@ First release.
   reverb.
 - Same bar centred in the menu bar on displays without a notch.
 
-[Unreleased]: https://github.com/nawed-clueso/notch-lyrics/compare/v1.1.1...HEAD
+[Unreleased]: https://github.com/nawed-clueso/notch-lyrics/compare/v1.1.2...HEAD
+[1.1.2]: https://github.com/nawed-clueso/notch-lyrics/compare/v1.1.1...v1.1.2
 [1.1.1]: https://github.com/nawed-clueso/notch-lyrics/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/nawed-clueso/notch-lyrics/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/nawed-clueso/notch-lyrics/releases/tag/v1.0.0

@@ -214,7 +214,7 @@ private struct WelcomeStep: View {
                            detail: "Windows appear and disappear as you plug monitors in and out.")
             }
             InfoNote(icon: "hand.raised",
-                     text: "Each step asks macOS for one permission. Nothing is sent anywhere: lyrics are fetched from LRCLIB by song title, and audio never leaves your Mac.")
+                     text: "Each step asks macOS for one permission. Lyrics are looked up by song title and artist, and audio never leaves your Mac.")
         }
     }
 }
